@@ -3,6 +3,8 @@
 import { useState } from "react";
 import VerticalNavbar from "@/components/VerticalNav";
 import { Button } from "@/components/ui/button";
+import { Save, FlaskConical } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function Home() {
   const [activePage, setActivePage] = useState("dashboard");
@@ -11,11 +13,11 @@ export default function Home() {
     switch (activePage) {
       case "dashboard":
         return (
-          <div className="border py-4 px-6 rounded-md shadow">
-            <h1 className="text-4xl font-bold tracking-tight underline">
-              Peripherals
-            </h1>
-            <div className="my-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Dashboard</CardTitle>
+            </CardHeader>
+            <CardContent>
               <h2 className="text-3xl font-bold tracking-tight">
                 Quick Actions
               </h2>
@@ -23,32 +25,35 @@ export default function Home() {
                 <Button>Reset All</Button>
                 <Button>Reset IMU</Button>
               </div>
-            </div>
-            {/* Might Consider Adding Motor Speed Data */}
-            <div className="grid grid-cols-2 gap-4 mt-4">
-              <h2 className="text-xl font-semibold tracking-tight">Online</h2>
-              <h2 className="text-xl font-semibold tracking-tight">Tactic</h2>
-              <h2 className="text-xl font-semibold tracking-tight">
-                IMU Readings
-              </h2>
-              <h2 className="text-xl font-semibold tracking-tight">
-                Kicker Status
-              </h2>
-              <h2 className="text-xl font-semibold tracking-tight">Position</h2>
-              <h2 className="text-xl font-semibold tracking-tight">
-                Ball Position
-              </h2>
-              <h2 className="text-xl font-semibold tracking-tight">Strategy</h2>
-            </div>
-          </div>
+              <div className="grid grid-cols-2 gap-4 mt-4">
+                <h2 className="text-xl font-semibold tracking-tight">Online</h2>
+                <h2 className="text-xl font-semibold tracking-tight">Tactic</h2>
+                <h2 className="text-xl font-semibold tracking-tight">
+                  IMU Readings
+                </h2>
+                <h2 className="text-xl font-semibold tracking-tight">
+                  Kicker Status
+                </h2>
+                <h2 className="text-xl font-semibold tracking-tight">
+                  Position
+                </h2>
+                <h2 className="text-xl font-semibold tracking-tight">
+                  Ball Position
+                </h2>
+                <h2 className="text-xl font-semibold tracking-tight">
+                  Strategy
+                </h2>
+              </div>
+            </CardContent>
+          </Card>
         );
       case "peripherals":
         return (
-          <div className="border py-4 px-6 rounded-md shadow">
-            <h1 className="text-4xl font-bold tracking-tight underline">
-              Peripherals
-            </h1>
-            <div className="my-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Peripherals</CardTitle>
+            </CardHeader>
+            <CardContent>
               <h2 className="text-3xl font-bold tracking-tight">
                 Quick Actions
               </h2>
@@ -56,9 +61,7 @@ export default function Home() {
                 <Button>Calibrate IMU</Button>
                 <Button>Calibrate Lightring</Button>
               </div>
-            </div>
-            <div className="my-2">
-              <h2 className="text-3xl font-bold tracking-tight">
+              <h2 className="text-3xl font-bold tracking-tight mt-4">
                 Light Ring Data
               </h2>
               <div className="grid grid-cols-2 gap-4 mt-4">
@@ -75,53 +78,95 @@ export default function Home() {
                   Threshold Values
                 </h3>
               </div>
-            </div>
-            <div className="my-2">
-              <h2 className="text-3xl font-bold tracking-tight">IMU Data</h2>
-              <div className="grid grid-cols-2 gap-4 mt-4">
-                <h3 className="text-xl font-semibold tracking-tight">
-                  Acceleormter
-                </h3>
-                <h3 className="text-xl font-semibold tracking-tight">
-                  Gyroscope
-                </h3>
+              <div className="my-2">
+                <h2 className="text-3xl font-bold tracking-tight">IMU Data</h2>
+                <div className="grid grid-cols-2 gap-4 mt-4">
+                  <h3 className="text-xl font-semibold tracking-tight">
+                    Acceleormter
+                  </h3>
+                  <h3 className="text-xl font-semibold tracking-tight">
+                    Gyroscope
+                  </h3>
+                </div>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         );
-      case "tune":
+      case "toonig":
         return (
-          <div className="border py-4 px-6 rounded-md shadow">
-            <h1 className="text-4xl font-bold tracking-tight underline">
-              Tooning
-            </h1>
-            <div className="my-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Toonig</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <h2 className="text-3xl font-bold tracking-tight">Movement</h2>
               <h2 className="text-3xl font-bold tracking-tight">
                 Line Track PID
               </h2>
-            </div>
-            <div className="my-2">
               <h2 className="text-3xl font-bold tracking-tight">IMU PID</h2>
-            </div>
-          </div>
+              <h2 className="text-3xl font-bold tracking-tight">IMU Kalman</h2>
+            </CardContent>
+          </Card>
         );
       default:
-        return <div>Dashboard Content</div>;
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle>Dashboard</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <h2 className="text-3xl font-bold tracking-tight">
+                Quick Actions
+              </h2>
+              <div className="space-x-2 space-y-2">
+                <Button>Reset All</Button>
+                <Button>Reset IMU</Button>
+              </div>
+              <div className="grid grid-cols-2 gap-4 mt-4">
+                <h2 className="text-xl font-semibold tracking-tight">Online</h2>
+                <h2 className="text-xl font-semibold tracking-tight">Tactic</h2>
+                <h2 className="text-xl font-semibold tracking-tight">
+                  IMU Readings
+                </h2>
+                <h2 className="text-xl font-semibold tracking-tight">
+                  Kicker Status
+                </h2>
+                <h2 className="text-xl font-semibold tracking-tight">
+                  Position
+                </h2>
+                <h2 className="text-xl font-semibold tracking-tight">
+                  Ball Position
+                </h2>
+                <h2 className="text-xl font-semibold tracking-tight">
+                  Strategy
+                </h2>
+              </div>
+            </CardContent>
+          </Card>
+        );
     }
   };
 
   return (
     <>
       <nav className="flex justify-around w-screen p-4 bg-primary text-primary-foreground">
-        <div>Logo</div>
         <div>Status</div>
-        <div>Something Else</div>
       </nav>
       <section className="grid grid-cols-6 m-2">
         <div className="col-span-1 h-full mr-2">
           <VerticalNavbar setActivePage={setActivePage} />
         </div>
         <main className="col-span-5 h-full">{renderContent()}</main>
+        <div className="space-x-2 z-99 bottom-4 right-4 fixed">
+          <Button>
+            <FlaskConical className="w-5 h-5 mr-2" />
+            Test
+          </Button>
+          <Button variant="destructive">
+            <Save className="w-5 h-5 mr-2" />
+            Save
+          </Button>
+        </div>
       </section>
     </>
   );
