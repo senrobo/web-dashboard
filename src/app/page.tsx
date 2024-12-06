@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import dynamic from "next/dynamic";
 
@@ -9,7 +9,7 @@ const FieldVisualization = dynamic(
 );
 
 export default function Home() {
-  const telemetryData = {
+  const [telemetryData, setTelemetryData] = useState({
     robot: {
       position: { x: 0, y: 0 }, // Robot position in cm
       orientation: 0, // Robot orientation in degrees
@@ -17,18 +17,67 @@ export default function Home() {
     ball: {
       position: { x: 0, y: 0 }, // Ball position in cm
     },
-  };
-
-  const velocities = [
-    { key: "vx", title: "Vx", unit: "cm/s", value: 25.5 },
-    { key: "vy", title: "Vy", unit: "cm/s", value: 30.2 },
-    {
-      key: "angularVelocity",
-      title: "Angular Velocity",
-      unit: "rad/s",
-      value: 0.75,
+    velocities: {
+      vx: 0, // Velocity in X direction (cm/s)
+      vy: 0, // Velocity in Y direction (cm/s)
+      angularVelocity: 0, // Angular velocity (rad/s)
     },
-  ];
+  });
+
+  useEffect(() => {
+    const fetchTelemetry = async () => {
+      try {
+        const response = await fetch("http://192.168.50.207/telemetry", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+
+          // Log the received data for debugging
+          console.log("Received telemetry data:", data);
+
+          setTelemetryData({
+            robot: {
+              position: {
+                x: data.xPosition || 0,
+                y: data.yPosition || 0,
+              },
+              orientation: data.bearing || 0,
+            },
+            ball: {
+              position: {
+                x: data.ballX || 0,
+                y: data.ballY || 0,
+              },
+            },
+            velocities: {
+              vx: data.vx || 0,
+              vy: data.vy || 0,
+              angularVelocity: data.angularVelocity || 0,
+            },
+          });
+        } else {
+          console.error(
+            "Failed to fetch telemetry data: HTTP Error",
+            response.status
+          );
+        }
+      } catch (error) {
+        console.error("Failed to fetch telemetry data:", error);
+      }
+    };
+
+    fetchTelemetry();
+
+    // Fetch data every 1 second
+    const interval = setInterval(fetchTelemetry, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const robotFields = [
     {
@@ -65,6 +114,27 @@ export default function Home() {
       value: telemetryData.ball.position.y,
     },
     { key: "ballDistance", title: "Ball Distance", unit: "cm", value: 50.0 },
+  ];
+
+  const velocities = [
+    {
+      key: "vx",
+      title: "Vx",
+      unit: "cm/s",
+      value: telemetryData.velocities.vx,
+    },
+    {
+      key: "vy",
+      title: "Vy",
+      unit: "cm/s",
+      value: telemetryData.velocities.vy,
+    },
+    {
+      key: "angularVelocity",
+      title: "Angular Velocity",
+      unit: "rad/s",
+      value: telemetryData.velocities.angularVelocity,
+    },
   ];
 
   return (
