@@ -1,10 +1,12 @@
 "use client";
+
 import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast } from "sonner";
-
-import { Input } from "@/components/ui/input"; // Import Input component
 import dynamic from "next/dynamic";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { Sun, Moon } from "lucide-react";
 
 const FieldVisualization = dynamic(
   () => import("@/components/FieldVisualisation"),
@@ -12,79 +14,118 @@ const FieldVisualization = dynamic(
 );
 
 export default function Home() {
-  const [ipAddress, setIpAddress] = useState("0.0.0.0"); // Default ESP32 IP
-  const [isConnected, setIsConnected] = useState(false); // Connection status
   const [telemetryData, setTelemetryData] = useState({
     robot: {
-      position: { x: 0, y: 0 }, // Robot position in cm
-      orientation: 0, // Robot orientation in degrees
+      position: { x: 0, y: 0 },
+      orientation: 0,
     },
     ball: {
-      position: { x: 0, y: 0 }, // Ball position in cm
+      position: { x: 0, y: 0 },
     },
     velocities: {
-      vx: 0, // Velocity in X direction (cm/s)
-      vy: 0, // Velocity in Y direction (cm/s)
-      angularVelocity: 0, // Angular velocity (rad/s)
+      vx: 0,
+      vy: 0,
+      angularVelocity: 0,
     },
   });
 
-  useEffect(() => {
-    const fetchTelemetry = async () => {
-      try {
-        const response = await fetch(`http://${ipAddress}/telemetry`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
+  const [esp32Ip, setEsp32Ip] = useState(""); // ESP32 IP input
+  const [isFetching, setIsFetching] = useState(false); // Fetching state
+  const [isConnected, setIsConnected] = useState(false); // ESP32 connection status
+  const [theme, setTheme] = useState("light"); // Theme switching
+
+  const fetchTelemetry = async () => {
+    if (!esp32Ip) {
+      toast.error("Please enter a valid ESP32 IP address.");
+      return;
+    }
+
+    setIsFetching(true);
+
+    try {
+      const response = await fetch(`http://${esp32Ip}/telemetry`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+
+        setTelemetryData({
+          robot: {
+            position: {
+              x: data.xPosition || 0,
+              y: data.yPosition || 0,
+            },
+            orientation: data.bearing || 0,
+          },
+          ball: {
+            position: {
+              x: data.ballX || 0,
+              y: data.ballY || 0,
+            },
+          },
+          velocities: {
+            vx: data.vx || 0,
+            vy: data.vy || 0,
+            angularVelocity: data.angularVelocity || 0,
           },
         });
 
-        if (response.ok) {
-          const data = await response.json();
-          console.log("Received telemetry data:", data);
-
-          setTelemetryData({
-            robot: {
-              position: {
-                x: data.xPosition || 0,
-                y: data.yPosition || 0,
-              },
-              orientation: data.bearing || 0,
-            },
-            ball: {
-              position: {
-                x: data.ballX || 0,
-                y: data.ballY || 0,
-              },
-            },
-            velocities: {
-              vx: data.vx || 0,
-              vy: data.vy || 0,
-              angularVelocity: data.angularVelocity || 0,
-            },
-          });
-
-          if (!isConnected) {
-            setIsConnected(true);
-            toast.success("Connected to ESP32!");
-          }
-        } else {
-          throw new Error("HTTP Error " + response.status);
+        if (!isConnected) {
+          setIsConnected(true);
+          toast.success("Connected to ESP32 successfully!");
         }
-      } catch (error) {
-        console.error("Failed to fetch telemetry data:", error);
+      } else {
         if (isConnected) {
+          toast.error(`ESP32 Connection Failed: HTTP ${response.status}`);
           setIsConnected(false);
-          toast.error("Disconnected from ESP32!");
         }
       }
-    };
+    } catch (error) {
+      if (isConnected) {
+        toast.error("Unable to connect to ESP32.");
+        setIsConnected(false);
+      }
+      console.error("Fetch Error:", error);
+    } finally {
+      setIsFetching(false);
+    }
+  };
 
-    fetchTelemetry();
-    const interval = setInterval(fetchTelemetry, 1000);
+  const disconnectEsp32 = () => {
+    setIsConnected(false);
+    setTelemetryData({
+      robot: {
+        position: { x: 0, y: 0 },
+        orientation: 0,
+      },
+      ball: {
+        position: { x: 0, y: 0 },
+      },
+      velocities: {
+        vx: 0,
+        vy: 0,
+        angularVelocity: 0,
+      },
+    });
+    toast("Disconnected from ESP32.");
+  };
 
-    return () => clearInterval(interval);
-  }, [ipAddress, isConnected]);
+  useEffect(() => {
+    if (esp32Ip && isConnected) {
+      const interval = setInterval(fetchTelemetry, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [esp32Ip, isConnected]);
+
+  const toggleTheme = () => {
+    const newTheme = theme === "light" ? "dark" : "light";
+    setTheme(newTheme);
+    document.documentElement.classList.toggle("dark", newTheme === "dark");
+  };
 
   const robotFields = [
     {
@@ -146,23 +187,30 @@ export default function Home() {
 
   return (
     <>
-      <div className="p-6 flex justify-center font-mono">
-        <div className="w-full max-w-4xl">
+      <div className="p-6 flex flex-col items-center font-mono">
+        <div className="w-full max-w-6xl">
           {/* Header */}
-          <div className="flex justify-between items-center mb-6">
+          <div className="flex items-center justify-between mb-6">
             <h1 className="text-2xl font-bold">Telemetry Dashboard</h1>
             <div className="flex items-center gap-4">
               <Input
-                value={ipAddress}
-                onChange={(e) => setIpAddress(e.target.value)}
-                placeholder="Enter ESP32 IP Address"
+                placeholder="Enter ESP32 IP"
+                value={esp32Ip}
+                onChange={(e) => setEsp32Ip(e.target.value)}
+                className="w-48"
               />
-              <div
-                className={`w-4 h-4 rounded-full ${
-                  isConnected ? "bg-green-500" : "bg-red-500"
-                }`}
-                title={isConnected ? "Connected" : "Disconnected"}
-              />
+              {!isConnected ? (
+                <Button onClick={fetchTelemetry} disabled={isFetching}>
+                  Connect
+                </Button>
+              ) : (
+                <Button onClick={disconnectEsp32} variant="destructive">
+                  Disconnect
+                </Button>
+              )}
+              <Button onClick={toggleTheme} variant="ghost">
+                {theme === "light" ? <Moon /> : <Sun />}
+              </Button>
             </div>
           </div>
 
