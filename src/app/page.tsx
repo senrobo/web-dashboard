@@ -65,13 +65,23 @@ export default function Home() {
 
     setIsFetching(true);
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+      toast.error("Connection timed out. Unable to connect to ESP32.");
+      setIsFetching(false);
+    }, 3000); // 5 seconds timeout
+
     try {
       const response = await fetch(`http://${esp32Ip}/telemetry`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
         },
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId); // Clear the timeout if the fetch succeeds
 
       if (response.ok) {
         const data = await response.json();
@@ -97,11 +107,6 @@ export default function Home() {
           },
         });
 
-        if (!isConnected) {
-          setIsConnected(true);
-          toast.success("Connected to ESP32 successfully!");
-        }
-
         const timestampedData: LogEntry = {
           time: new Date().toLocaleTimeString(),
           vx: data.vx || 0,
@@ -114,6 +119,11 @@ export default function Home() {
         };
 
         setLogData((prev) => [...prev, timestampedData]);
+
+        if (!isConnected) {
+          setIsConnected(true);
+          toast.success("Connected to ESP32 successfully!");
+        }
       } else {
         if (isConnected) {
           toast.error(`ESP32 Connection Failed: HTTP ${response.status}`);
@@ -121,11 +131,15 @@ export default function Home() {
         }
       }
     } catch (error) {
-      if (isConnected) {
-        toast.error("Unable to connect to ESP32.");
-        setIsConnected(false);
+      if (error.name === "AbortError") {
+        console.warn("Fetch aborted due to timeout.");
+      } else {
+        if (isConnected) {
+          toast.error("Unable to connect to ESP32.");
+          setIsConnected(false);
+        }
+        console.error("Fetch Error:", error);
       }
-      console.error("Fetch Error:", error);
     } finally {
       setIsFetching(false);
     }
@@ -234,7 +248,7 @@ export default function Home() {
 
   return (
     <>
-      <div className="p-6 flex flex-col items-center font-mono">
+      <div className="p-6 flex flex-col items-center">
         <div className="w-full max-w-6xl">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
@@ -262,7 +276,7 @@ export default function Home() {
                   </Button>
                 </DrawerTrigger>
                 <DrawerContent>
-                  <div className="mx-auto w-full max-w-sm">
+                  <div className="mx-auto w-full max-w-fit">
                     <DrawerHeader>
                       <DrawerTitle>Data Logging</DrawerTitle>
                       <DrawerDescription>

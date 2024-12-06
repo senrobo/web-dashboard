@@ -61,6 +61,7 @@
 @layer base {
   * {
     @apply border-border;
+    @apply font-mono scroll-smooth;
   }
   html {
     overflow-y: scroll;
