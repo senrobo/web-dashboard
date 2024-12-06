@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input"; // Import Input component
 import dynamic from "next/dynamic";
 
 const FieldVisualization = dynamic(
@@ -9,6 +10,8 @@ const FieldVisualization = dynamic(
 );
 
 export default function Home() {
+  const [ipAddress, setIpAddress] = useState("0.0.0.0"); // Default ESP32 IP
+  const [isConnected, setIsConnected] = useState(false); // Connection status
   const [telemetryData, setTelemetryData] = useState({
     robot: {
       position: { x: 0, y: 0 }, // Robot position in cm
@@ -27,7 +30,7 @@ export default function Home() {
   useEffect(() => {
     const fetchTelemetry = async () => {
       try {
-        const response = await fetch("http://192.168.50.207/telemetry", {
+        const response = await fetch(`http://${ipAddress}/telemetry`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -60,14 +63,18 @@ export default function Home() {
               angularVelocity: data.angularVelocity || 0,
             },
           });
+
+          setIsConnected(true); // Mark as connected
         } else {
           console.error(
             "Failed to fetch telemetry data: HTTP Error",
             response.status
           );
+          setIsConnected(false); // Mark as disconnected
         }
       } catch (error) {
         console.error("Failed to fetch telemetry data:", error);
+        setIsConnected(false); // Mark as disconnected
       }
     };
 
@@ -77,7 +84,7 @@ export default function Home() {
     const interval = setInterval(fetchTelemetry, 1000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [ipAddress]); // Re-fetch if the IP address changes
 
   const robotFields = [
     {
@@ -141,8 +148,23 @@ export default function Home() {
     <>
       <div className="p-6 flex justify-center font-mono">
         <div className="w-full max-w-4xl">
-          {/* Title */}
-          <h1 className="text-2xl font-bold mb-6">Telemetry Dashboard</h1>
+          {/* Header */}
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-2xl font-bold">Telemetry Dashboard</h1>
+            <div className="flex items-center gap-4">
+              <Input
+                value={ipAddress}
+                onChange={(e) => setIpAddress(e.target.value)}
+                placeholder="Enter ESP32 IP Address"
+              />
+              <div
+                className={`w-4 h-4 rounded-full ${
+                  isConnected ? "bg-green-500" : "bg-red-500"
+                }`}
+                title={isConnected ? "Connected" : "Disconnected"}
+              />
+            </div>
+          </div>
 
           {/* Velocities Section */}
           <div className="mb-8">
