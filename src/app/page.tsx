@@ -6,12 +6,34 @@ import dynamic from "next/dynamic";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Sun, Moon } from "lucide-react";
+import { Sun, Moon, List } from "lucide-react";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
+import * as XLSX from "xlsx";
 
 const FieldVisualization = dynamic(
   () => import("@/components/FieldVisualisation"),
   { ssr: false }
 );
+
+type LogEntry = {
+  time: string;
+  vx: number;
+  vy: number;
+  angularVelocity: number;
+  xPosition: number;
+  yPosition: number;
+  ballX: number;
+  ballY: number;
+};
 
 export default function Home() {
   const [telemetryData, setTelemetryData] = useState({
@@ -28,11 +50,12 @@ export default function Home() {
       angularVelocity: 0,
     },
   });
-
-  const [esp32Ip, setEsp32Ip] = useState(""); // ESP32 IP input
-  const [isFetching, setIsFetching] = useState(false); // Fetching state
-  const [isConnected, setIsConnected] = useState(false); // ESP32 connection status
-  const [theme, setTheme] = useState("light"); // Theme switching
+  const [esp32Ip, setEsp32Ip] = useState("");
+  const [isFetching, setIsFetching] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
+  const [theme, setTheme] = useState("light");
+  const [isLogging, setIsLogging] = useState(false);
+  const [logData, setLogData] = useState<LogEntry[]>([]);
 
   const fetchTelemetry = async () => {
     if (!esp32Ip) {
@@ -78,6 +101,19 @@ export default function Home() {
           setIsConnected(true);
           toast.success("Connected to ESP32 successfully!");
         }
+
+        const timestampedData: LogEntry = {
+          time: new Date().toLocaleTimeString(),
+          vx: data.vx || 0,
+          vy: data.vy || 0,
+          angularVelocity: data.angularVelocity || 0,
+          xPosition: data.xPosition || 0,
+          yPosition: data.yPosition || 0,
+          ballX: data.ballX || 0,
+          ballY: data.ballY || 0,
+        };
+
+        setLogData((prev) => [...prev, timestampedData]);
       } else {
         if (isConnected) {
           toast.error(`ESP32 Connection Failed: HTTP ${response.status}`);
@@ -111,7 +147,7 @@ export default function Home() {
         angularVelocity: 0,
       },
     });
-    toast("Disconnected from ESP32.");
+    toast.error("Disconnected from ESP32.");
   };
 
   useEffect(() => {
@@ -125,6 +161,17 @@ export default function Home() {
     const newTheme = theme === "light" ? "dark" : "light";
     setTheme(newTheme);
     document.documentElement.classList.toggle("dark", newTheme === "dark");
+  };
+
+  const startLogging = () => {
+    if (isLogging) {
+      const worksheet = XLSX.utils.json_to_sheet(logData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Telemetry Logs");
+      XLSX.writeFile(workbook, "telemetry_logs.xlsx");
+      toast("Log saved as telemetry_logs.xlsx!");
+    }
+    setIsLogging(!isLogging);
   };
 
   const robotFields = [
@@ -208,6 +255,44 @@ export default function Home() {
                   Disconnect
                 </Button>
               )}
+              <Drawer>
+                <DrawerTrigger asChild>
+                  <Button variant="outline" disabled={!isConnected}>
+                    <List />
+                  </Button>
+                </DrawerTrigger>
+                <DrawerContent>
+                  <div className="mx-auto w-full max-w-sm">
+                    <DrawerHeader>
+                      <DrawerTitle>Data Logging</DrawerTitle>
+                      <DrawerDescription>
+                        View and log raw telemetry data.
+                      </DrawerDescription>
+                    </DrawerHeader>
+                    <div className="p-4 pb-0">
+                      <pre className="bg-muted p-4 rounded text-sm overflow-auto h-64">
+                        {logData
+                          .map(
+                            (log, index) =>
+                              `Time: ${log.time}, Vx: ${log.vx}, Vy: ${log.vy}, Angular: ${log.angularVelocity}, X: ${log.xPosition}, Y: ${log.yPosition}, BallX: ${log.ballX}, BallY: ${log.ballY}`
+                          )
+                          .join("\n")}
+                      </pre>
+                    </div>
+                    <DrawerFooter>
+                      <Button
+                        onClick={startLogging}
+                        variant={isLogging ? "destructive" : "default"}
+                      >
+                        {isLogging ? "Stop Logging" : "Start Logging"}
+                      </Button>
+                      <DrawerClose asChild>
+                        <Button variant="outline">Close</Button>
+                      </DrawerClose>
+                    </DrawerFooter>
+                  </div>
+                </DrawerContent>
+              </Drawer>
               <Button onClick={toggleTheme} variant="ghost">
                 {theme === "light" ? <Moon /> : <Sun />}
               </Button>
