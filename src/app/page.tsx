@@ -1,6 +1,8 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { toast } from "sonner";
+
 import { Input } from "@/components/ui/input"; // Import Input component
 import dynamic from "next/dynamic";
 
@@ -39,8 +41,6 @@ export default function Home() {
 
         if (response.ok) {
           const data = await response.json();
-
-          // Log the received data for debugging
           console.log("Received telemetry data:", data);
 
           setTelemetryData({
@@ -64,27 +64,27 @@ export default function Home() {
             },
           });
 
-          setIsConnected(true); // Mark as connected
+          if (!isConnected) {
+            setIsConnected(true);
+            toast.success("Connected to ESP32!");
+          }
         } else {
-          console.error(
-            "Failed to fetch telemetry data: HTTP Error",
-            response.status
-          );
-          setIsConnected(false); // Mark as disconnected
+          throw new Error("HTTP Error " + response.status);
         }
       } catch (error) {
         console.error("Failed to fetch telemetry data:", error);
-        setIsConnected(false); // Mark as disconnected
+        if (isConnected) {
+          setIsConnected(false);
+          toast.error("Disconnected from ESP32!");
+        }
       }
     };
 
     fetchTelemetry();
-
-    // Fetch data every 1 second
     const interval = setInterval(fetchTelemetry, 1000);
 
     return () => clearInterval(interval);
-  }, [ipAddress]); // Re-fetch if the IP address changes
+  }, [ipAddress, isConnected]);
 
   const robotFields = [
     {
